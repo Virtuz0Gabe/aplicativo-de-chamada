@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:chamada/model/aluno.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 
 
+// ignore: must_be_immutable
 class RelatorioPage extends StatefulWidget {
   List<Aluno> chamada;
   RelatorioPage(this.chamada, {super.key});
@@ -77,8 +77,7 @@ class _RelatorioPageState extends State<RelatorioPage> {
 
   Future<void> salvarPdf(List<Aluno> chamada) async {
     gerarPdf(chamada);
-
-    final Directory appDocDir = await getApplicationDocumentsDirectory();  
+  
     final Directory pdfDir = Directory('/storage/emulated/0/Download/pdfs');
     pdfDir.createSync(recursive: true);
 

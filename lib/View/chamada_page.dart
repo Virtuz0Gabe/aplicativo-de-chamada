@@ -1,11 +1,12 @@
 import "package:flutter/material.dart";
 import "package:chamada/model/aluno.dart";
 import "package:chamada/View/relatorio_page.dart";
+import 'package:chamada/database/objectbox_databse.dart';
 
 // ignore: must_be_immutable
 class ChamadaPage extends StatefulWidget {
-  List<Aluno> chamada;
-  ChamadaPage(this.chamada, {super.key});
+  ObjectBoxDatabase objectbox;
+  ChamadaPage(this.objectbox, {super.key});
 
   @override
   State<ChamadaPage> createState() => _ChamadaPageState();
@@ -15,6 +16,8 @@ class _ChamadaPageState extends State<ChamadaPage> {
 
   @override
   Widget build(BuildContext context) {
+    List<Aluno> chamada = widget.objectbox.students.getAll();
+    int studentsNum = chamada.length;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -28,10 +31,10 @@ class _ChamadaPageState extends State<ChamadaPage> {
         ),
       ),
       body: ListView.builder(
-        itemCount: widget.chamada.length,
+        itemCount: studentsNum,
         itemBuilder: (BuildContext context, int index) {
-          bool presente = widget.chamada[index].presente; 
-          Aluno aluno = widget.chamada[index];
+          bool presente = chamada[index].presente; 
+          Aluno aluno = chamada[index];
           return Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
@@ -42,7 +45,7 @@ class _ChamadaPageState extends State<ChamadaPage> {
                   : Icons.person_2
                 ),
                 const Padding(padding: EdgeInsets.all(12)),
-                Text(aluno.nome),
+                Text("${aluno.nome} ${aluno.sobrenome}"),
                 Expanded(
                   child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -53,6 +56,7 @@ class _ChamadaPageState extends State<ChamadaPage> {
                       onPressed: () {
                         setState(() {
                           aluno.setPresente(!aluno.presente);
+                          widget.objectbox.students.put(aluno);
                         });
                       },
                       child: presente ? const Text("Presente") : const Text("Ausente"),
@@ -73,7 +77,7 @@ class _ChamadaPageState extends State<ChamadaPage> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => RelatorioPage(widget.chamada))
+            MaterialPageRoute(builder: (context) => RelatorioPage(chamada))
           );
         },
       ),

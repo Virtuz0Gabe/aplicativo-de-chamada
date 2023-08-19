@@ -1,25 +1,25 @@
+import 'package:chamada/database/objectbox_databse.dart';
+import "package:chamada/main.dart";
 import "package:chamada/model/aluno.dart";
 import "package:flutter/material.dart";
 import "package:flutter/services.dart";
 
 // ignore: must_be_immutable
 class HomePage extends StatefulWidget {
-  
-  List<Aluno> chamada =[];
-  HomePage(this.chamada, {super.key});
+
+  ObjectBoxDatabase objectbox;
+  HomePage(this.objectbox, {super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+
   @override
   Widget build(BuildContext context) {
-    //==============================================
-    Aluno aluno = Aluno("Gabriel", "Werner Kuhn", "Masculino", 19);
-    widget.chamada.add(aluno);//=======================
-
-    int studentsNum = widget.chamada.length;
+    //List<Aluno> chamada = widget.objectbox.students.getAll();
+    //int studentsNum = chamada.length;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -31,23 +31,66 @@ class _HomePageState extends State<HomePage> {
           },
         ),
       ),
-      body: ListView.builder(
-        itemCount: studentsNum,
-        itemBuilder: (BuildContext context, int index) {
-          Aluno aluno = widget.chamada[index];
-          return ListTile(
-            title: Text("${aluno.nome} ${aluno.sobrenome}"),
-            leading: Icon( 
-                aluno.sexo == "Masculino"
-                ? Icons.person
-                : Icons.person_2
-              ),
-            trailing: const Icon(Icons.info_outline_rounded),
-            onTap: () {
-              debugPrint("Student ${(studentsNum + 1)} Selected");
+      body: StreamBuilder(
+        stream: objectbox.watchAll(),
+        builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const CircularProgressIndicator(); 
+            } else if (snapshot.hasError) {
+              return const Text('Erro ao carregar os dados'); 
+            } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+              return Center(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.blueAccent,
+                      width: 2,
+                    ),
+                  ),
+                  child: const Text('Nenhum aluno disponível',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ) 
+                ); 
+            } else {
+              List<Aluno> chamada = snapshot.data!;
+          
+          return ListView.builder(
+            itemCount: chamada.length,
+            itemBuilder: (BuildContext context, int index) {
+              Aluno aluno = chamada[index];
+              return Dismissible(
+                key: UniqueKey(), 
+                movementDuration: const Duration(seconds: 1),
+                background: Container(
+                  color: Colors.redAccent,
+                ),
+                onDismissed: (direction) {
+                  widget.objectbox.students.remove(aluno.id);
+                },
+                child: ListTile(
+                  title: Text("${aluno.nome} ${aluno.sobrenome}"),
+                  leading: Icon( 
+                      aluno.sexo == "Masculino"
+                      ? Icons.person_2
+                      : Icons.person
+                    ),
+                  
+                  trailing: const Icon(Icons.edit),
+                  onTap: () {
+                    _dialogBuilder(context, aluno);
+                  },
+                ),
+              );
             },
           );
-        }
+          }
+        },
       ),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: (Colors.tealAccent),
@@ -55,20 +98,30 @@ class _HomePageState extends State<HomePage> {
         icon: const Icon(Icons.person_add_alt_1),
         foregroundColor: (Colors.black),
         onPressed: () {
-          _dialogBuilder(context);
+          _dialogBuilder(context, null);
         },
       ),
     );
   }
 
 
-// ======================================== Dialog ===============================
-  Future<void> _dialogBuilder(BuildContext context) {
+// ================|===================|===== DIALOG =====|===================|================\\
+  Future<void> _dialogBuilder(BuildContext context, Aluno ?aluno) {
+
     TextEditingController nomeCT = TextEditingController();
     TextEditingController idadeCT = TextEditingController();
     String sexo = "Masculino";
-
     bool isSwitch = false;
+
+    if (aluno != null){
+      nomeCT.text = "${aluno.nome} ${aluno.sobrenome}";
+      idadeCT.text = (aluno.idade).toString();
+      sexo = aluno.sexo;
+      sexo != "Masculino" 
+        ? isSwitch = false
+        : isSwitch = true;
+    }
+    
     final formKey = GlobalKey<FormState>();
     final validFormNF = ValueNotifier<bool>(false);
     return showDialog<void>(
@@ -77,7 +130,9 @@ class _HomePageState extends State<HomePage> {
         return StatefulBuilder (builder: (context, setState) {
           return 
          AlertDialog(
-            title: const Text('Insira os dados do aluno'),
+            title: aluno!= null
+              ? const Text("Atulize os dados da matrícula")
+              : const Text('Insira os dados do aluno'),
             content: SizedBox(
               height: 200,
               child: Form(
@@ -123,10 +178,14 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.person),
+                      Icon(
+                        Icons.person,
+                        color: isSwitch ? Colors.grey : Colors.teal,
+                        ),
                       Text("Masculino",
                       style: TextStyle(
-                      color: isSwitch ? Colors.grey : Colors.teal
+                      color: isSwitch ? Colors.grey : Colors.teal,
+                      fontWeight: isSwitch ? FontWeight.normal : FontWeight.bold
                     )),
                       Switch(
                       value: isSwitch,
@@ -135,13 +194,20 @@ class _HomePageState extends State<HomePage> {
                           isSwitch = newBool;
                           sexo = isSwitch ? "Masculino" : sexo = "Feminino";
                         });
-                      }
+                      },
+                      activeColor: Colors.teal,
+                      activeTrackColor: Colors.teal,
+                      inactiveThumbColor: Colors.teal,
+                      inactiveTrackColor: Colors.teal,
                     ),
                     Text("Feminino",
                     style: TextStyle(
-                      color: isSwitch ? Colors.teal : Colors.grey
+                      color: isSwitch ? Colors.teal : Colors.grey,
+                      fontWeight: isSwitch ? FontWeight.bold : FontWeight.normal
                     )),
-                    const Icon(Icons.person_2)
+                     Icon(
+                      Icons.person_2,
+                      color: isSwitch ? Colors.teal : Colors.grey,)
                     ],
                   ),
                 ]
@@ -162,15 +228,26 @@ class _HomePageState extends State<HomePage> {
               builder: (_, validForm, child) {
                 return
                 ElevatedButton.icon(
-                  label: const Text("Confirmar Matrícula"),
+                  label: aluno!= null  
+                    ? const Text("Atualizar Matŕicula")
+                    : const Text("Confirmar Matrícula"),
                   icon: const Icon(Icons.check_rounded),
                   onPressed: !validForm ? null : () {
                     List<String> partes = nomeCT.text.split(" ");
                     String primeiroNome = partes[0];
                     String sobrenome = partes.sublist(1).join(' ');
         
-                    Aluno novoAluno = Aluno(primeiroNome, sobrenome, sexo, int.parse(idadeCT.text));  
-                    widget.chamada.add(novoAluno);
+                    if (aluno != null){
+                      aluno.nome = primeiroNome;
+                      aluno.sobrenome = sobrenome;
+                      aluno.idade = int.parse(idadeCT.text);
+                      aluno.sexo = sexo;
+                      widget.objectbox.students.put(aluno);
+                    } else {
+                      Aluno novoAluno = Aluno(primeiroNome, sobrenome, sexo, int.parse(idadeCT.text));
+                      widget.objectbox.students.put(novoAluno);
+                    }
+
                     Navigator.of(context).pop();
                     },
                   );

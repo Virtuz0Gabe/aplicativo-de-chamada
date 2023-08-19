@@ -1,10 +1,14 @@
+import 'package:chamada/database/objectbox_databse.dart';
 import 'package:flutter/material.dart';
 import 'package:chamada/View/home_page.dart';
 import 'package:chamada/View/chamada_page.dart';
-import 'package:chamada/model/aluno.dart';
 
-void main() {
-  
+
+late ObjectBoxDatabase objectbox;
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  objectbox = await ObjectBoxDatabase.create();
   runApp(const MyApp());
 }
 
@@ -28,7 +32,6 @@ class RootPage extends StatefulWidget {
 }
 
 class _RootPageState extends State<RootPage> {
-  List<Aluno> chamada = [];
   int currentPage = 0;
   List<Widget> pages = [];
 
@@ -36,8 +39,8 @@ class _RootPageState extends State<RootPage> {
   void initState() {
     super.initState();
     pages = [
-      HomePage(chamada),
-      ChamadaPage(chamada),
+      HomePage(objectbox),
+      ChamadaPage(objectbox),
     ];
   }
   @override
@@ -48,7 +51,6 @@ class _RootPageState extends State<RootPage> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.people), label: "Alunos"),
           NavigationDestination(icon: Icon(Icons.list_rounded), label: "Chamada"),
-          //NavigationDestination(icon: Icon(Icons.history), label: "Histórico de chamadas")
         ],
         onDestinationSelected: (int index) {
           setState(() {
