@@ -45,7 +45,7 @@ class _HomePageState extends State<HomePage> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.blueAccent,
+                      color: Colors.teal,
                       width: 2,
                     ),
                   ),
@@ -247,7 +247,6 @@ class _HomePageState extends State<HomePage> {
                       Aluno novoAluno = Aluno(primeiroNome, sobrenome, sexo, int.parse(idadeCT.text));
                       widget.objectbox.students.put(novoAluno);
                     }
-
                     Navigator.of(context).pop();
                     },
                   );
